@@ -11,8 +11,9 @@ class RegisterRequest(BaseModel):
     def username_valid(cls, v: str) -> str:
         if len(v) < 3 or len(v) > 50:
             raise ValueError("Username must be 3-50 characters")
-        if not v.isalnum() and "_" not in v:
-            raise ValueError("Username must be alphanumeric (underscores allowed)")
+        import re
+        if not re.match(r'^[a-zA-Z0-9._-]+$', v):
+            raise ValueError("Username may only contain letters, numbers, dots, hyphens, and underscores")
         return v
 
     @field_validator("password")
