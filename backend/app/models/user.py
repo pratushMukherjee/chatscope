@@ -24,3 +24,6 @@ class User(Base):
     documents: Mapped[list["Document"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    templates: Mapped[list["PromptTemplate"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
