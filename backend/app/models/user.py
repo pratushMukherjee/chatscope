@@ -17,3 +17,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+    conversations: Mapped[list["Conversation"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
