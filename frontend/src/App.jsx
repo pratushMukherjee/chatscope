@@ -5,6 +5,7 @@ import AppLayout from './components/layout/AppLayout';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ChatPage from './pages/ChatPage';
+import DocumentsPage from './pages/DocumentsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<ChatPage />} />
               <Route path="/c/:conversationId" element={<ChatPage />} />
+              <Route path="/documents" element={<DocumentsPage />} />
             </Route>
           </Route>
           <Route path="*" element={<NotFoundPage />} />

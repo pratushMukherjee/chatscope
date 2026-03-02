@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMessages } from '../../api/messages';
+import { getDocuments } from '../../api/documents';
 import useChat from '../../hooks/useChat';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
@@ -13,6 +14,7 @@ export default function ChatWindow() {
   const queryClient = useQueryClient();
   const [model, setModel] = useState('gpt-4o');
   const [optimisticMessages, setOptimisticMessages] = useState([]);
+  const [attachedDocIds, setAttachedDocIds] = useState([]);
 
   const {
     sendMessage,
@@ -22,12 +24,21 @@ export default function ChatWindow() {
     setActiveConversation,
   } = useChat();
 
-  // Fetch messages for existing conversation
   const { data: messageData } = useQuery({
     queryKey: ['messages', conversationId],
     queryFn: () => getMessages(parseInt(conversationId)),
     enabled: !!conversationId,
   });
+
+  const { data: docsData } = useQuery({
+    queryKey: ['documents'],
+    queryFn: () => getDocuments(),
+  });
+
+  const availableDocs = (docsData?.documents || []).filter(
+    (d) => d.status === 'ready'
+  );
+  const attachedDocs = availableDocs.filter((d) => attachedDocIds.includes(d.id));
 
   useEffect(() => {
     if (conversationId) {
@@ -35,16 +46,22 @@ export default function ChatWindow() {
     }
   }, [conversationId, setActiveConversation]);
 
-  // Clear optimistic messages when real data arrives
   useEffect(() => {
     if (messageData && !isStreaming) {
       setOptimisticMessages([]);
     }
   }, [messageData, isStreaming]);
 
+  const handleToggleDoc = useCallback((docId) => {
+    setAttachedDocIds((prev) =>
+      prev.includes(docId)
+        ? prev.filter((id) => id !== docId)
+        : [...prev, docId]
+    );
+  }, []);
+
   const handleSend = useCallback(
     async (content) => {
-      // Add optimistic user message
       const tempMsg = {
         id: `temp-${Date.now()}`,
         role: 'user',
@@ -56,14 +73,15 @@ export default function ChatWindow() {
       const newConvId = await sendMessage(
         content,
         conversationId ? parseInt(conversationId) : null,
-        model
+        model,
+        attachedDocIds
       );
 
       if (newConvId && !conversationId) {
         navigate(`/c/${newConvId}`, { replace: true });
       }
     },
-    [sendMessage, conversationId, model, navigate]
+    [sendMessage, conversationId, model, attachedDocIds, navigate]
   );
 
   const allMessages = [...(messageData?.messages || []), ...optimisticMessages];
@@ -72,6 +90,11 @@ export default function ChatWindow() {
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">
         <ModelSelector value={model} onChange={setModel} />
+        {attachedDocs.length > 0 && (
+          <span className="text-xs text-primary-600 font-medium">
+            {attachedDocs.length} doc{attachedDocs.length > 1 ? 's' : ''} attached
+          </span>
+        )}
       </div>
 
       {allMessages.length === 0 && !isStreaming ? (
@@ -102,6 +125,9 @@ export default function ChatWindow() {
         onSend={handleSend}
         isStreaming={isStreaming}
         onStop={stopGeneration}
+        attachedDocs={attachedDocs}
+        onToggleDoc={handleToggleDoc}
+        availableDocs={availableDocs}
       />
     </div>
   );

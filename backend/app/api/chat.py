@@ -8,6 +8,7 @@ from app.core.security import get_current_user
 from app.models.user import User
 from app.schemas.chat import ChatRequest
 from app.services.chat_service import ChatService
+from app.services.rag_service import RAGService
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -18,6 +19,16 @@ async def stream_chat(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # RAG: retrieve relevant chunks if documents are attached
+    context_chunks = None
+    if request.document_ids:
+        rag_service = RAGService(db)
+        context_chunks = await rag_service.search_similar(
+            query=request.content,
+            document_ids=request.document_ids,
+            top_k=5,
+        )
+
     chat_service = ChatService(db)
 
     return StreamingResponse(
@@ -26,6 +37,7 @@ async def stream_chat(
             conversation_id=request.conversation_id,
             content=request.content,
             model=request.model or settings.DEFAULT_MODEL,
+            context_chunks=context_chunks,
         ),
         media_type="text/event-stream",
         headers={
