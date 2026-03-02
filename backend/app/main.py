@@ -10,6 +10,7 @@ from app.api.router import api_router
 from app.middleware.rate_limiter import setup_rate_limiter
 from app.middleware.error_handler import setup_error_handlers
 from app.middleware.request_logging import RequestLoggingMiddleware
+from app.middleware.content_safety import ContentSafetyMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -45,8 +46,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Middleware
+    # Middleware (order matters — outermost runs first)
     app.add_middleware(RequestLoggingMiddleware)
+    app.add_middleware(ContentSafetyMiddleware)
     setup_rate_limiter(app)
     setup_error_handlers(app)
 
