@@ -66,10 +66,10 @@ export default function useChat() {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
               if (data === '[DONE]') {
-                queryClient.invalidateQueries({ queryKey: ['conversations'] });
+                await queryClient.invalidateQueries({ queryKey: ['conversations'] });
                 if (newConversationId) {
-                  queryClient.invalidateQueries({
-                    queryKey: ['messages', newConversationId],
+                  await queryClient.invalidateQueries({
+                    queryKey: ['messages', String(newConversationId)],
                   });
                 }
               } else {
